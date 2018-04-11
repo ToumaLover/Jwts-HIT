@@ -117,7 +117,7 @@ def get_courese_id(course_list):
         return False
 
 
-def loop(Session, course_id, course_type, thread_num=1):
+def loop(Session, course_id, course_type, thread_num=20):
     thread_list = []
     for i in range(thread_num):
         thread_list.append(threading.Thread(target=Session.select_course, args=(course_id, course_type,)))
