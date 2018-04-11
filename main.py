@@ -7,7 +7,6 @@ __author__ = '惊蛰'
 import requests
 import threading
 import getpass
-import time
 import re
 import os
 
@@ -19,14 +18,19 @@ class Session(object):
 
     def get_alert(self, content):
         msg = re.search("alert\('(.*?)'\);", content)
-        if msg and msg.group(1) in ["用户不存在或密码错误！", "页面过期，请重新登录"]:
+        if msg:
             print(msg.group(1))
-            self.login()
-        elif msg and '成功' in msg.group(1):
-            print(msg.group(1))
+            self.staus(msg.group(1))
+
+    def staus(self, content):
+        if "容量已满"in content:
             os._exit(0)
-        elif msg:
-            print(msg.group(1))
+        elif "已选" in content:
+            os._exit(0)
+        elif "成功" in content:
+            os._exit(0)
+        elif content in ["用户不存在或密码错误！", "页面过期，请重新登录"]:
+            self.login()
 
     def login(self):
         username = input('username:')
@@ -81,7 +85,11 @@ class Session(object):
             course_id = re.findall('<input id="xkyq_(.*?)" type="hidden" value=""/>', r.text)
             teacher = re.findall(
                 '<td><div style="width:100%; white-space: normal;word-break:break-all;">(.*?)</div></td>', r.text)
-            return {'name': course_name, 'id': course_id, 'teacher': teacher}
+            if course_name:
+                return {'name': course_name, 'id': course_id, 'teacher': teacher}
+            else:
+                print("Can't get the list of course.")
+                os._exit(0)
 
     def select_course(self, course_id, course_type):
         if self.semester == None:
@@ -109,7 +117,7 @@ def get_courese_id(course_list):
         return False
 
 
-def loop(Session, course_id, course_type, thread_num=5):
+def loop(Session, course_id, course_type, thread_num=1):
     thread_list = []
     for i in range(thread_num):
         thread_list.append(threading.Thread(target=Session.select_course, args=(course_id, course_type,)))
