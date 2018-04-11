@@ -7,5 +7,3 @@ To select the course.
 关键字即可，默认取列表中含有当前关键字的第一个。
 ### Module
 * pip install requests
-* pip install getpass
-* pip install threading
