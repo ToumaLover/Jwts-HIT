@@ -12,9 +12,11 @@ import os
 
 
 class Session(object):
-    def __init__(self):
-        self.s = requests.Session()
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
         self.semester = None
+        self.s = requests.Session()
 
     def get_alert(self, content):
         msg = re.search("alert\('(.*?)'\);", content)
@@ -29,15 +31,17 @@ class Session(object):
             os._exit(0)
         elif "成功" in content:
             os._exit(0)
-        elif content in ["用户不存在或密码错误！", "页面过期，请重新登录"]:
+        elif content == "用户不存在或密码错误！":
+            self.username = input('username:')
+            self.password = getpass.getpass('password:')
+            self.login()
+        elif content == "页面过期，请重新登录":
             self.login()
 
     def login(self):
-        username = input('username:')
-        password = getpass.getpass('password:')
         r = self.s.post('http://jwts.hit.edu.cn/loginLdap', data={
-            'usercode': username,
-            'password': password,
+            'usercode': self.username,
+            'password': self.password,
             'code': ''
         })
         if r.history:
@@ -128,7 +132,9 @@ def loop(Session, course_id, course_type, thread_num=20):
 
 
 def main():
-    s = Session()
+    username = input('username:')
+    password = getpass.getpass('password:')
+    s = Session(username, password)
     s.login()
     course_type = input('course_type:')
     course_list = s.get_course_list(course_type)
