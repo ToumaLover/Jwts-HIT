@@ -1,4 +1,4 @@
-# Jwts@HIT
+# Jwts-HIT
 To select the course.
 ### Introduction 
 #### course_type
