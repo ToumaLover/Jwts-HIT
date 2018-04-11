@@ -128,7 +128,7 @@ def main():
     while course_id == False:
         print("Can't find the course.\nPlease input the name of the course again.")
         course_id = get_courese_id(course_list)
-    input("Please input ENTER to start select!")
+    input("Please input ENTER to start to select the course!")
     while 1:
         loop(s, course_id, course_type)
 
