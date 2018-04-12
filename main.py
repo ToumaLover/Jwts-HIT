@@ -26,8 +26,8 @@ class Session(object):
 
     def staus(self, content):
         if "容量已满"in content:
-            pass
             os._exit(0) #注释此行可以监控捡漏
+            pass
         elif "已选" in content:
             os._exit(0)
         elif "成功" in content:
