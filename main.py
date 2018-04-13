@@ -26,7 +26,7 @@ class Session(object):
 
     def staus(self, content):
         if "容量已满"in content:
-            os._exit(0) #注释此行可以监控捡漏
+            os._exit(0)  # 注释此行可以监控捡漏
             pass
         elif "已选" in content:
             os._exit(0)
@@ -71,7 +71,7 @@ class Session(object):
         if r.history:
             self.get_alert(r.text)
         else:
-            token = re.search('<input type="hidden" id="token" name="token" value="(.*?)" />', r.text)
+            token = re.search('id="token" name="token" value="(.*?)" />', r.text)
             if token:
                 return token.group(1)
 
@@ -81,17 +81,18 @@ class Session(object):
         r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
             'pageXklb': course_type,
             'pageXnxq': self.semester,
-            'pageSize': 300,
+            'pageSize': 200,
         })
         if r.history:
             self.get_alert(r.text)
         else:
             course_name = re.findall('return false;">(.*?)</a></td>', r.text)
-            course_id = re.findall('<input id="xkyq_(.*?)" type="hidden" value=""/>', r.text)
-            teacher = re.findall(
-                '<td><div style="width:100%; white-space: normal;word-break:break-all;">(.*?)</div></td>', r.text)
+            course_id = re.findall('<input id="xkyq_(.*?)"', r.text)
             if course_name:
-                return {'name': course_name, 'id': course_id, 'teacher': teacher}
+                course_list = []
+                for x in range(len(course_id)):
+                    course_list.append({'name': course_name[x], 'id': course_id[x]})
+                return course_list
             else:
                 print("Can't get the list of course.")
                 os._exit(0)
@@ -111,9 +112,9 @@ class Session(object):
 
 def get_courese_id(course_list):
     course_name = input('course_name:')
-    for i in range(len(course_list['name'])):
-        if course_name.lower() in course_list['name'][i].lower():
-            course_id = course_list['id'][i]
+    for i in range(len(course_list)):
+        if course_name.lower() in course_list[i]['name'].lower():
+            course_id = course_list[i]['id']
             print("Find the course successfully.")
             return course_id
         else:
