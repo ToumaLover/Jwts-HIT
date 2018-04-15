@@ -6,6 +6,7 @@ __author__ = '惊蛰'
 
 import requests
 import threading
+import datetime
 import getpass
 import re
 import os
@@ -21,7 +22,7 @@ class Session(object):
     def get_alert(self, content):
         msg = re.search("alert\('(.*?)'\);", content)
         if msg:
-            print(msg.group(1))
+            print(datetime.datetime.now(), msg.group(1))
             self.staus(msg.group(1))
 
     def staus(self, content):
