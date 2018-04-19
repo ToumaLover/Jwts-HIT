@@ -6,8 +6,8 @@ __author__ = '惊蛰'
 
 import requests
 import threading
-import datetime
 import getpass
+import datetime
 import re
 import os
 
@@ -52,6 +52,7 @@ class Session(object):
             print('Account：', self.get_username())
 
     def set_semester(self):
+        '''默认最近的选课学期'''
         r = self.s.get('http://jwts.hit.edu.cn/xsxk/queryXsxk?pageXklb=szxx')
         semester = re.search('<option value="(.*?)"  selected="selected"', r.text)
         if semester:
@@ -82,7 +83,7 @@ class Session(object):
         r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
             'pageXklb': course_type,
             'pageXnxq': self.semester,
-            'pageSize': 200,
+            'pageSize': 300,
         })
         if r.history:
             self.get_alert(r.text)
@@ -102,6 +103,18 @@ class Session(object):
         if self.semester == None:
             self.set_semester()
         r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', data={
+            'rwh': course_id,
+            'token': self.get_token(),
+            'pageXklb': course_type,
+            'pageXnxq': self.semester,
+        })
+        self.get_alert(r.text)
+        return r.text
+
+    def cancel_course(self, course_id, course_type):
+        if self.semester == None:
+            self.set_semester()
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXstk', data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
