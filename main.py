@@ -34,14 +34,17 @@ class Session(object):
         elif "成功" in content:
             os._exit(0)
         elif content == "用户不存在或密码错误！":
-            self.username = input('username:')
-            self.password = getpass.getpass('password:')
+            self.set_basis()
             self.login()
         elif content == "页面过期，请重新登录":
             self.login()
 
+    def set_basis(self):
+        self.username = input('username:')
+        self.password = getpass.getpass('password:')
+
     def login(self):
-        r = self.s.post('http://jwts.hit.edu.cn/loginLdap', data={
+        r = self.s.post('http://jwts.hit.edu.cn/loginLdap', timeout=1.00, data={
             'usercode': self.username,
             'password': self.password,
             'code': ''
@@ -53,7 +56,7 @@ class Session(object):
 
     def set_semester(self):
         '''默认最近的选课学期'''
-        r = self.s.get('http://jwts.hit.edu.cn/xsxk/queryXsxk?pageXklb=szxx')
+        r = self.s.get('http://jwts.hit.edu.cn/xsxk/queryXsxk?pageXklb=szxx', timeout=1.00)
         semester = re.search('<option value="(.*?)"  selected="selected"', r.text)
         if semester:
             self.semester = semester.group(1)
@@ -66,7 +69,7 @@ class Session(object):
             return re.search('您好！(.*?)同学', r.text).group(1)
 
     def get_token(self):
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=1.11, data={
             'pageXklb': 'yy',
             'pageXnxq': '2017-20182',
         })
@@ -80,10 +83,10 @@ class Session(object):
     def get_course_list(self, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=1.00, data={
             'pageXklb': course_type,
             'pageXnxq': self.semester,
-            'pageSize': 300,
+            'pageSize': 200,
         })
         if r.history:
             self.get_alert(r.text)
@@ -92,7 +95,7 @@ class Session(object):
             course_id = re.findall('<input id="xkyq_(.*?)"', r.text)
             if course_name:
                 course_list = []
-                for x in range(len(course_id)):
+                for x in range(len(course_name)):
                     course_list.append({'name': course_name[x], 'id': course_id[x]})
                 return course_list
             else:
@@ -102,7 +105,7 @@ class Session(object):
     def select_course(self, course_id, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', timeout=1.00, data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
@@ -114,7 +117,7 @@ class Session(object):
     def cancel_course(self, course_id, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXstk', data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXstk', timeout=1.00, data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
@@ -137,7 +140,7 @@ def get_courese_id(course_list):
         return False
 
 
-def loop(Session, course_id, course_type, thread_num=20):
+def loop(Session, course_id, course_type, thread_num=10):
     thread_list = []
     for i in range(thread_num):
         thread_list.append(threading.Thread(target=Session.select_course, args=(course_id, course_type,)))
