@@ -27,7 +27,7 @@ class Session(object):
 
     def staus(self, content):
         if "容量已满"in content:
-            os._exit(0)  # 注释此行可以监控捡漏
+            # os._exit(0)  # 注释此行可以监控捡漏
             pass
         elif "已选" in content:
             os._exit(0)
@@ -44,7 +44,7 @@ class Session(object):
         self.password = getpass.getpass('password:')
 
     def login(self):
-        r = self.s.post('http://jwts.hit.edu.cn/loginLdap', timeout=1.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/loginLdap', data={
             'usercode': self.username,
             'password': self.password,
             'code': ''
@@ -56,7 +56,7 @@ class Session(object):
 
     def set_semester(self):
         '''默认最近的选课学期'''
-        r = self.s.get('http://jwts.hit.edu.cn/xsxk/queryXsxk?pageXklb=szxx', timeout=1.00)
+        r = self.s.get('http://jwts.hit.edu.cn/xsxk/queryXsxk?pageXklb=szxx')
         semester = re.search('<option value="(.*?)"  selected="selected"', r.text)
         if semester:
             self.semester = semester.group(1)
@@ -69,7 +69,7 @@ class Session(object):
             return re.search('您好！(.*?)同学', r.text).group(1)
 
     def get_token(self):
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=1.11, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=15.00, data={
             'pageXklb': 'yy',
             'pageXnxq': '2017-20182',
         })
@@ -83,10 +83,10 @@ class Session(object):
     def get_course_list(self, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=1.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
             'pageXklb': course_type,
             'pageXnxq': self.semester,
-            'pageSize': 200,
+            'pageSize': 300,
         })
         if r.history:
             self.get_alert(r.text)
@@ -105,7 +105,7 @@ class Session(object):
     def select_course(self, course_id, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', timeout=1.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', timeout=15.00, data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
@@ -117,7 +117,7 @@ class Session(object):
     def cancel_course(self, course_id, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXstk', timeout=1.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXstk', data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
@@ -140,7 +140,7 @@ def get_courese_id(course_list):
         return False
 
 
-def loop(Session, course_id, course_type, thread_num=10):
+def loop(Session, course_id, course_type, thread_num=15):
     thread_list = []
     for i in range(thread_num):
         thread_list.append(threading.Thread(target=Session.select_course, args=(course_id, course_type,)))
