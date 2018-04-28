@@ -27,7 +27,7 @@ class Session(object):
 
     def staus(self, content):
         if "容量已满"in content:
-            # os._exit(0)  # 注释此行可以监控捡漏
+            os._exit(0)  # 注释此行可以监控捡漏
             pass
         elif "已选" in content:
             os._exit(0)
@@ -69,7 +69,7 @@ class Session(object):
             return re.search('您好！(.*?)同学', r.text).group(1)
 
     def get_token(self):
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=15.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=25.00, data={
             'pageXklb': 'yy',
             'pageXnxq': '2017-20182',
         })
@@ -105,7 +105,7 @@ class Session(object):
     def select_course(self, course_id, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', timeout=15.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', timeout=25.00, data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
