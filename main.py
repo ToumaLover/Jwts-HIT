@@ -146,6 +146,8 @@ class Session(object):
                         if '成功' in res or '已满' in res or '已选' in res:
                             print(datetime.datetime.now(), course['name'], res)
                             course_list.remove(course)
+                        elif res == "页面过期，请重新登录":
+                            self.login()
                         else:
                             print(datetime.datetime.now(), res)
                 else:
