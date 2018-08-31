@@ -13,11 +13,12 @@ import os
 
 
 class Session(object):
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
-        self.semester = None
+    def __init__(self):
+        self.set_basis()
         self.s = requests.Session()
+        self.login()
+        self.set_semester()
+        self.flag = 0
 
     def get_alert(self, content):
         msg = re.search("alert\('(.*?)'\);", content)
@@ -27,7 +28,7 @@ class Session(object):
 
     def staus(self, content):
         if "容量已满"in content:
-            os._exit(0)  # 注释此行可以监控捡漏
+            # os._exit(0)  # 注释此行可以监控捡漏
             pass
         elif "已选" in content:
             os._exit(0)
@@ -38,6 +39,8 @@ class Session(object):
             self.login()
         elif content == "页面过期，请重新登录":
             self.login()
+        else:
+            return False
 
     def set_basis(self):
         self.username = input('username:')
@@ -69,7 +72,7 @@ class Session(object):
             return re.search('您好！(.*?)同学', r.text).group(1)
 
     def get_token(self):
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', timeout=25.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
             'pageXklb': 'yy',
             'pageXnxq': '2017-20182',
         })
@@ -81,8 +84,6 @@ class Session(object):
                 return token.group(1)
 
     def get_course_list(self, course_type):
-        if self.semester == None:
-            self.set_semester()
         r = self.s.post('http://jwts.hit.edu.cn/xsxk/queryXsxkList', data={
             'pageXklb': course_type,
             'pageXnxq': self.semester,
@@ -96,7 +97,11 @@ class Session(object):
             if course_name:
                 course_list = []
                 for x in range(len(course_name)):
-                    course_list.append({'name': course_name[x], 'id': course_id[x]})
+                    course_list.append({'name': course_name[x], 'id': course_id[x], 'type': course_type})
+                if course_type in ['bx', 'xx']:
+                    course_class = re.findall('<td>(\d{7})</td>', r.text)
+                    for x in range(len(course_list)):
+                        course_list[x]['class'] = course_class[x]
                 return course_list
             else:
                 print("Can't get the list of course.")
@@ -105,14 +110,16 @@ class Session(object):
     def select_course(self, course_id, course_type):
         if self.semester == None:
             self.set_semester()
-        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', timeout=25.00, data={
+        r = self.s.post('http://jwts.hit.edu.cn/xsxk/saveXsxk', data={
             'rwh': course_id,
             'token': self.get_token(),
             'pageXklb': course_type,
             'pageXnxq': self.semester,
         })
-        self.get_alert(r.text)
-        return r.text
+        if self.flag:
+            return re.search("alert\('(.*?)'\);", r.text).group(1)
+        else:
+            self.get_alert(r.text)
 
     def cancel_course(self, course_id, course_type):
         if self.semester == None:
@@ -124,7 +131,25 @@ class Session(object):
             'pageXnxq': self.semester,
         })
         self.get_alert(r.text)
-        return r.text
+
+    def select_all(self, class_num):
+        self.flag = 1
+        course_list = self.get_course_list('bx') + self.get_course_list('xx')
+        while len(course_list):
+            for course in course_list:
+                if course['class'] == class_num:
+                    try:
+                        res = self.select_course(course['id'], course['type'])
+                    except:
+                        res = ''
+                    finally:
+                        if '成功' in res or '已满' in res or '已选' in res:
+                            print(datetime.datetime.now(), course['name'], res)
+                            course_list.remove(course)
+                        else:
+                            print(datetime.datetime.now(), res)
+                else:
+                    course_list.remove(course)
 
 
 def get_courese_id(course_list):
@@ -151,19 +176,21 @@ def loop(Session, course_id, course_type, thread_num=15):
 
 
 def main():
-    username = input('username:')
-    password = getpass.getpass('password:')
-    s = Session(username, password)
-    s.login()
-    course_type = input('course_type:')
-    course_list = s.get_course_list(course_type)
-    course_id = get_courese_id(course_list)
-    while course_id == False:
-        print("Can't find the course.\nPlease input the name of the course again.")
+    s = Session()
+    module = input('Please choose the module.\n0.Select single course.\n1.Select all bx and xx\n')
+    if int(module):
+        class_num = input('Please input class:')
+        s.select_all(class_num)
+    else:
+        course_type = input('course_type:')
+        course_list = s.get_course_list(course_type)
         course_id = get_courese_id(course_list)
-    input("Please input ENTER to start to select the course!")
-    while 1:
-        loop(s, course_id, course_type)
+        while course_id == False:
+            print("Can't find the course.\nPlease input the name of the course again.")
+            course_id = get_courese_id(course_list)
+        input("Please input ENTER to start to select the course!")
+        while 1:
+            loop(s, course_id, course_type)
 
 
 if __name__ == '__main__':
